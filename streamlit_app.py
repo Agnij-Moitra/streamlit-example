@@ -1,38 +1,53 @@
-from collections import namedtuple
-import altair as alt
-import math
-import pandas as pd
 import streamlit as st
+import pickle
 
-"""
-# Welcome to Streamlit!
+LABELS = {
+    "0": r'10.00mL AA+ NR/PVA(2:8)',
+    "1": r'10.10.00mL AA+ NR/PVA(6:4)',
+    "2": r'10.00mL AA+ NR/PVA(8:2)',
+    "3": r'10.00mL AA+ NR/PVA(9:1)',
+    "4": r'6.00mL AA+ NR/PVA(2:8)',
+    "5": r'6.00mL AA+ NR/PVA(6:4)',
+    "6": r'6.00mL AA+ NR/PVA(8:2)',
+    "7": r'6.00mL AA+ NR/PVA(9:1)',
+    "8": r'8.00mL AA+ NR/PVA(2:8)',
+    "9": r'8.00mL AA+ NR/PVA(6:4)',
+    "10": r'8.00mL AA+ NR/PVA(8:2)',
+    "11": r'8.00mL AA+ NR/PVA(9:1)',
+    "12": r'F2',
+    "13": r'F3',
+    "14": r'F4',
+    "15": r'F5',
+}
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+model = pickle.load(open("xgb_classification.pkl", "rb"))
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+def predict_output(N,P,K,temperature,humidity,ph,rainfall,ReleaseRate):
+    input_data = [[N,P,K,temperature,humidity,ph,rainfall,ReleaseRate]]
+    prediction = model.predict(input_data)[0]
+    prediction_label = LABELS[str(prediction)]
+    return prediction_label
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+def main():
+    st.title("ML Web App")
 
+    st.header("Input Parameters")
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+    nitrogen = st.number_input("Nitrogen (kg/ hectare)")
+    phosphorous = st.number_input("Phosphorous Content (kg/ hectare)")
+    potassium = st.number_input("Potassium Content (kg/ hectare)")
+    temperature = st.number_input("Temperature")
+    humidity = st.number_input("Humidity")
+    ph = st.number_input("Ph")
+    rainfall = st.number_input("Rainfall")
+    plant_grown = st.text_input("Plant Grown")
+    release_rate = st.number_input("Release Rate")
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+    if st.button("Predict"):
+        prediction = predict_output(nitrogen, phosphorous, potassium, temperature, humidity, ph, rainfall, release_rate)
+        
+        st.header("Prediction")
+        st.write(prediction)
 
-    points_per_turn = total_points / num_turns
-
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
-
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+if __name__ == "__main__":
+    main()
